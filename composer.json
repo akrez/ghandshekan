@@ -1,0 +1,11 @@
+{
+    "require": {
+        "athlon1600/php-proxy": "*",
+        "react/http": "*",
+        "react/socket": "*",
+        "guzzlehttp/guzzle": "*",
+        "guzzlehttp/psr7": "*",
+        "workerman/psr7": "*",
+        "workerman/workerman": "*"
+    }
+}
