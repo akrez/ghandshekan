@@ -1,43 +1,60 @@
 <?php
 
-use GuzzleHttp\Psr7\Message;
-use GuzzleHttp\Psr7\Response;
+// $ php examples/72-server-http-connect-proxy.php 8080
+// $ curl -v --proxy http://localhost:8080 https://reactphp.org/
 
-require __DIR__ . './vendor/autoload.php';
+use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Message\Response;
+use React\Socket\Connector;
+use React\Socket\ConnectionInterface;
 
-$http = new React\Http\HttpServer(function (Psr\Http\Message\ServerRequestInterface $request) {
-    if ('CONNECT' === $request->getMethod()) {
-        return new Response(200, [], null, '1.1', 'Connection Established');
+require __DIR__ . '/vendor/autoload.php';
+
+$connector = new Connector();
+
+// Note how this example uses the `HttpServer` without the `StreamingRequestMiddleware`.
+// Unlike the plain HTTP proxy, the CONNECT method does not contain a body
+// and we establish an end-to-end connection over the stream object, so this
+// doesn't have to store any payload data in memory at all.
+$http = new React\Http\HttpServer(function (ServerRequestInterface $request) use ($connector) {
+    if ($request->getMethod() !== 'CONNECT') {
+        return new Response(
+            Response::STATUS_METHOD_NOT_ALLOWED,
+            array(
+                'Content-Type' => 'text/plain',
+                'Allow' => 'CONNECT'
+            ),
+            'This is an HTTP CONNECT (secure HTTPS) proxy'
+        );
     }
-    return new Response(200, [], Message::toString($request));
+
+    // try to connect to given target host
+    return $connector->connect($request->getRequestTarget())->then(
+        function (ConnectionInterface $remote) {
+            // connection established => forward data
+            return new Response(
+                Response::STATUS_OK,
+                array(),
+                $remote
+            );
+        },
+        function (Exception $e) {
+            return new Response(
+                Response::STATUS_BAD_GATEWAY,
+                array(
+                    'Content-Type' => 'text/plain'
+                ),
+                'Unable to connect: ' . $e->getMessage()
+            );
+        }
+    );
 });
 
-$uri = 'ssl://' . (isset($argv[1]) ? $argv[1] : '0.0.0.0:0');
-$socket = new React\Socket\SocketServer($uri, array(
-    // 'tls' => array(
-    //     'local_cert' => isset($argv[2]) ? $argv[2] : __DIR__ . '/localhost.pem'
-    // ),
-    'ssl' => [
-        'allow_self_signed' => true,
-        'verify_peer' => false,
-        'verify_peer_name' => false,
-    ],
-));
+$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '0.0.0.0:0', [
+    'tls' => array(
+        'local_cert' => isset($argv[2]) ? $argv[2] : (__DIR__ . '/localhost.pem')
+    ),
+]);
 $http->listen($socket);
 
-// $socket->on('connection', function (React\Socket\ConnectionInterface $connection) {
-//     $connection->once('data', function ($requestAsString) use ($connection) {
-//         $request = Message::parseRequest($requestAsString);
-//         if ('CONNECT' === $request->getMethod()) {
-//             $response = new Response(200, [], null, '1.1', 'Connection Established');
-//             $connection->write(Message::toString($response));
-//             echo $connection->getRemoteAddress();
-//         }
-//     });
-// });
-
-$socket->on('error', function (Exception $e) {
-    echo 'Error: ' . $e->getMessage() . PHP_EOL;
-});
-
-echo 'Listening on ' . str_replace('tls:', 'https:', $socket->getAddress()) . PHP_EOL;
+echo 'Listening on ' . str_replace('tcp:', 'http:', $socket->getAddress()) . PHP_EOL;
