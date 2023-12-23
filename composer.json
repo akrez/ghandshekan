@@ -1,11 +1,18 @@
 {
     "require": {
-        "athlon1600/php-proxy": "*",
+        "symfony/var-dumper": "*",
         "react/http": "*",
         "react/socket": "*",
         "guzzlehttp/guzzle": "*",
         "guzzlehttp/psr7": "*",
         "workerman/psr7": "*",
-        "workerman/workerman": "*"
+        "workerman/workerman": "*",
+        "athlon1600/php-proxy": "*",
+        "athlon1600/php-proxy-plugin-bundle": "*"
+    },
+    "config": {
+        "platform": {
+            "php": "8.0.0"
+        }
     }
 }
