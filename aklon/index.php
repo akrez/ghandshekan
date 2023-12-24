@@ -212,8 +212,8 @@ class Xxx
     private function srcHref($matches)
     {
         $url = trim($matches[2]);
-        $schemes = array('data:', 'magnet:', 'about:', 'javascript:', 'mailto:', 'tel:', 'ios-app:', 'android-app:');
-        if (starts_with($url, $schemes)) {
+        $types = array('data:', 'magnet:', 'about:', 'javascript:', 'mailto:', 'tel:', 'ios-app:', 'android-app:');
+        if (starts_with($url, $types)) {
             return $matches[0];
         }
         $changed = static::encryptUrl(
