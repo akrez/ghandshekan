@@ -106,28 +106,102 @@ class Xxx
 
     public function convertBody($body)
     {
-        $body = preg_replace_callback('@(?:src|href)\s*=\s*(["|\'])(.*?)\1@is', [$this, 'srcHref'], $body);
-
+        $body = preg_replace_callback('@(?:src|href)\s*=\s*(["|\'])(.*?)\1@is', array($this, 'srcHref'), $body);
+        $body = preg_replace_callback('@<form[^>]*action=(["\'])(.*?)\1[^>]*>@i', array($this, 'formAction'), $body);
+        $body = preg_replace_callback('/content=(["\'])\d+\s*;\s*url=(.*?)\1/is', array($this, 'metaRefresh'), $body);
+        $body = preg_replace_callback('@[^a-z]{1}url\s*\((?:\'|"|)(.*?)(?:\'|"|)\)@im', array($this, 'cssUrl'), $body);
+        $body = preg_replace_callback('/@import (\'|")(.*?)\1/i', array($this, 'cssImport'), $body);
+        $body = preg_replace_callback('/srcset=\"(.*?)\"/i', array($this, 'srcset'), $body);
         return $body;
     }
 
-    public function srcHref($matches)
+    private function srcset($matches)
+    {
+        $src = trim($matches[1]);
+        $urls = preg_split('/\s*,\s*/', $src);
+        foreach ($urls as $part) {
+            $pos = strpos($part, ' ');
+            if ($pos !== false) {
+                $url = substr($part, 0, $pos);
+                $changed = static::realToFake(
+                    $url,
+                    $this->baseHost,
+                    $this->fakeUrlParsed,
+                    $this->realUrlParsed
+                );
+                $src = str_replace($url, $changed, $src);
+            }
+        }
+        return 'srcset="' . $src . '"';
+    }
+
+    private function cssImport($matches)
     {
         $url = trim($matches[2]);
+        $changed = static::realToFake(
+            $url,
+            $this->baseHost,
+            $this->fakeUrlParsed,
+            $this->realUrlParsed
+        );
+        return str_replace($url, $changed, $matches[0]);
+    }
 
+    private function cssUrl($matches)
+    {
+        $url = trim($matches[1]);
+        if (starts_with($url, 'data:')) {
+            return $matches[0];
+        }
+        $changed = static::realToFake(
+            $url,
+            $this->baseHost,
+            $this->fakeUrlParsed,
+            $this->realUrlParsed
+        );
+        return str_replace($url, $changed, $matches[0]);
+    }
+
+    private function metaRefresh($matches)
+    {
+        $url = trim($matches[2]);
+        $changed = static::realToFake(
+            $url,
+            $this->baseHost,
+            $this->fakeUrlParsed,
+            $this->realUrlParsed
+        );
+        return str_replace($url, $changed, $matches[0]);
+    }
+
+    private function formAction($matches)
+    {
+        $action = trim($matches[2]);
+        if (!$action) {
+            $action = $this->fakeUrl;
+        }
+        $changed = static::realToFake(
+            $action,
+            $this->baseHost,
+            $this->fakeUrlParsed,
+            $this->realUrlParsed
+        );
+        return str_replace($action, $changed, $matches[0]);
+    }
+
+    private function srcHref($matches)
+    {
+        $url = trim($matches[2]);
         $schemes = array('data:', 'magnet:', 'about:', 'javascript:', 'mailto:', 'tel:', 'ios-app:', 'android-app:');
         if (starts_with($url, $schemes)) {
             return $matches[0];
         }
-
         $changed = static::realToFake(
-            $matches[2],
+            $url,
             $this->baseHost,
             $this->fakeUrlParsed,
             $this->realUrlParsed
-
         );
-
         return str_replace($url, $changed, $matches[0]);
     }
 }
