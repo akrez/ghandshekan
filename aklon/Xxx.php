@@ -88,7 +88,7 @@ class Xxx
         return ($parsed['host'] ? $scheme . $userPass . $parsed['host'] . $port : '')  . $path . $query . $fragment;
     }
 
-    public static function encryptUrl($url, $baseHost, $fakeUrlParsed, $realUrlParsed)
+    public static function encryptUrl($url, $baseHost, $fakeUrlParsed = [], $realUrlParsed = [])
     {
         $parsed = static::parseUrl($url);
 
@@ -101,7 +101,7 @@ class Xxx
         return static::unparseUrl($parsed);
     }
 
-    public static function decryptUrl($url, $baseHost, $fakeUrlParsed)
+    public static function decryptUrl($url, $baseHost, $fakeUrlParsed = [])
     {
         $parsed = static::parseUrl($url);
 
