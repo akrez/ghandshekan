@@ -8,16 +8,20 @@ require('../vendor/autoload.php');
 
 class Xxx
 {
+    public $baseHost;
+    //
+    public $fakeUrl;
     public $fakeUrlParsed;
     //
     public $realUrl;
     public $realUrlParsed;
 
 
-    public function __construct(
-        public string $baseHost,
-        public string $fakeUrl
-    ) {
+    public function __construct($baseHost, $fakeUrl)
+    {
+        $this->baseHost = $baseHost;
+        //
+        $this->fakeUrl = $fakeUrl;
         $this->fakeUrlParsed = static::parseUrl($fakeUrl);
         //
         $this->realUrl = static::fakeToReal($fakeUrl, $baseHost);
@@ -29,7 +33,7 @@ class Xxx
         return parse_url($url, $component);
     }
 
-    public static function unparseUrl(array $parsed, $host = null, $scheme = null): string
+    public static function unparseUrl(array $parsed): string
     {
         $parsed = $parsed + [
             'scheme' => null,
@@ -41,12 +45,6 @@ class Xxx
             'query' => null,
             'fragment' => null,
         ];
-        if (null !== $scheme) {
-            $parsed['scheme'] = $scheme;
-        }
-        if (null !== $host) {
-            $parsed['host'] = $host;
-        }
 
         $scheme = '';
         if ($parsed['scheme']) {
@@ -83,11 +81,10 @@ class Xxx
         $scheme = (isset($parsed['scheme']) ? $parsed['scheme'] : $realScheme);
         $host = (isset($parsed['host']) ? $parsed['host'] : $realHost);
 
-        return static::unparseUrl(
-            $parsed,
-            implode('.', [$scheme, $host, $fakeHost]),
-            $fakeScheme
-        );
+        $parsed['scheme'] = $fakeScheme;
+        $parsed['host'] = implode('.', [$scheme, $host, $fakeHost]);
+
+        return static::unparseUrl($parsed);
     }
 
     public static function fakeToReal($fakeUrl, $baseHost)
@@ -101,11 +98,10 @@ class Xxx
             1 => $realHost,
         ] = explode('.', $realSchemeHost, 2);
 
-        return static::unparseUrl(
-            $parsed,
-            $realHost,
-            $realScheme
-        );
+        $parsed['scheme'] = $realScheme;
+        $parsed['host'] = $realHost;
+
+        return static::unparseUrl($parsed);
     }
 
     public function convertBody($body)
