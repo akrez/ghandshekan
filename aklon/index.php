@@ -13,8 +13,6 @@ class Xxx
     public $realUrl;
     public $realUrlParsed;
 
-    public $realHost;
-    public $realScheme;
 
     public function __construct(
         public string $fakeUrl,
@@ -56,11 +54,7 @@ class Xxx
         }
         $userPass = '';
         if ($parsed['user']) {
-            if ($parsed['pass']) {
-                $userPass = $parsed['user'] . ':' . $parsed['pass'] . '@';
-            } else {
-                $userPass = $parsed['user'] . '@';
-            }
+            $userPass = $parsed['user'] . ($parsed['pass'] ? ':' . $parsed['pass'] : '') . '@';
         }
         $port = '';
         if ($parsed['port']) {
