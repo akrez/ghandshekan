@@ -87,9 +87,9 @@ class Xxx
         return static::unparseUrl($parsed);
     }
 
-    public static function fakeToReal($fakeUrl, $baseHost)
+    public static function fakeToReal($url, $baseHost)
     {
-        $parsed = static::parseUrl($fakeUrl);
+        $parsed = static::parseUrl($url);
 
         $realSchemeHost = str_replace('.' . $baseHost, '', $parsed['host']);
 
