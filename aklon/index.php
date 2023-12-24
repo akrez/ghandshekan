@@ -11,6 +11,8 @@ class Xxx
     public $fakeUrlParsed;
     //
     public $realUrl;
+    public $realUrlParsed;
+
     public $realHost;
     public $realScheme;
 
@@ -19,12 +21,9 @@ class Xxx
         public string $baseHost
     ) {
         $this->fakeUrlParsed = $this->parseUrl($fakeUrl);
-
+        //
         $this->realUrl = $this->fakeToReal($fakeUrl);
-
-        $parsed = $this->parseUrl($this->realUrl);
-        $this->realHost = $parsed['host'];
-        $this->realScheme = $parsed['scheme'];
+        $this->realUrlParsed = $this->parseUrl($this->realUrl);
     }
 
     public static function parseUrl(string $url, int $component = -1)
@@ -135,8 +134,8 @@ class Xxx
             $matches[2],
             $this->fakeUrlParsed['scheme'],
             $this->baseHost,
-            $this->realScheme,
-            $this->realHost
+            $this->realUrlParsed['scheme'],
+            $this->realUrlParsed['host']
         );
 
         return str_replace($url, $changed, $matches[0]);
