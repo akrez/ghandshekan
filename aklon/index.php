@@ -18,10 +18,10 @@ class Xxx
         public string $baseHost,
         public string $fakeUrl
     ) {
-        $this->fakeUrlParsed = $this->parseUrl($fakeUrl);
+        $this->fakeUrlParsed = static::parseUrl($fakeUrl);
         //
-        $this->realUrl = $this->fakeToReal($fakeUrl, $baseHost);
-        $this->realUrlParsed = $this->parseUrl($this->realUrl);
+        $this->realUrl = static::fakeToReal($fakeUrl, $baseHost);
+        $this->realUrlParsed = static::parseUrl($this->realUrl);
     }
 
     public static function parseUrl(string $url, int $component = -1)
@@ -124,7 +124,7 @@ class Xxx
             return $matches[0];
         }
 
-        $changed = $this->realToFake(
+        $changed = static::realToFake(
             $matches[2],
             $this->fakeUrlParsed['scheme'],
             $this->baseHost,
