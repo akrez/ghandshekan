@@ -28,6 +28,11 @@ class Xxx
         $this->realUrlParsed = static::parseUrl($this->realUrl);
     }
 
+    public static function getCleanContentType($contentType)
+    {
+        return trim(preg_replace('@;.*@', '', $contentType));
+    }
+
     public static function parseUrl(string $url, int $component = -1)
     {
         return parse_url($url, $component);
@@ -229,7 +234,8 @@ try {
     $response = $e->getResponse();
 }
 
-$isHtml = (false !== strpos(implode(',', $response->getHeader('content-type')), 'text/html;'));
+$cleanContentType = $x::getCleanContentType(implode(',', $response->getHeader('content-type')));
+$isHtml = ('text/html' == $cleanContentType);
 
 foreach ($response->getHeaders() as $headerKey => $headers) {
     header($headerKey . ':' . implode(',', $headers));
