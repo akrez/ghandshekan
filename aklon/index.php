@@ -15,12 +15,12 @@ class Xxx
 
 
     public function __construct(
-        public string $fakeUrl,
-        public string $baseHost
+        public string $baseHost,
+        public string $fakeUrl
     ) {
         $this->fakeUrlParsed = $this->parseUrl($fakeUrl);
         //
-        $this->realUrl = $this->fakeToReal($fakeUrl);
+        $this->realUrl = $this->fakeToReal($fakeUrl, $baseHost);
         $this->realUrlParsed = $this->parseUrl($this->realUrl);
     }
 
@@ -90,11 +90,11 @@ class Xxx
         );
     }
 
-    public function fakeToReal($fakeUrl)
+    public static function fakeToReal($fakeUrl, $baseHost)
     {
         $parsed = static::parseUrl($fakeUrl);
 
-        $realSchemeHost = str_replace('.' . $this->baseHost, '', $parsed['host']);
+        $realSchemeHost = str_replace('.' . $baseHost, '', $parsed['host']);
 
         [
             0 => $realScheme,
@@ -136,9 +136,7 @@ class Xxx
     }
 }
 
-$x = new Xxx($_SERVER['SCRIPT_URI'], 'akrezing.ir');
-
-// dd($x);
+$x = new Xxx('akrezing.ir', $_SERVER['SCRIPT_URI']);
 
 $request = ServerRequest::fromGlobals()->withUri(new Uri($x->realUrl));
 
