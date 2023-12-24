@@ -8,15 +8,18 @@ require('../vendor/autoload.php');
 
 class Xxx
 {
+    public $fakeUrlParsed;
+    //
     public $realUrl;
     public $realHost;
     public $realScheme;
 
     public function __construct(
         public string $fakeUrl,
-        public string $fakeHost,
-        public string $fakeScheme = 'https'
+        public string $baseHost
     ) {
+        $this->fakeUrlParsed = $this->parseUrl($fakeUrl);
+
         $this->realUrl = $this->fakeToReal($fakeUrl);
 
         $parsed = $this->parseUrl($this->realUrl);
@@ -98,7 +101,7 @@ class Xxx
     {
         $parsed = static::parseUrl($fakeUrl);
 
-        $realSchemeHost = str_replace('.' . $this->fakeHost, '', $parsed['host']);
+        $realSchemeHost = str_replace('.' . $this->baseHost, '', $parsed['host']);
 
         [
             0 => $realScheme,
@@ -130,8 +133,8 @@ class Xxx
 
         $changed = $this->realToFake(
             $matches[2],
-            $this->fakeScheme,
-            $this->fakeHost,
+            $this->fakeUrlParsed['scheme'],
+            $this->baseHost,
             $this->realScheme,
             $this->realHost
         );
@@ -140,7 +143,7 @@ class Xxx
     }
 }
 
-$x = new Xxx($_SERVER['SCRIPT_URI'], 'akrezing.ir', 'http');
+$x = new Xxx($_SERVER['SCRIPT_URI'], 'akrezing.ir');
 
 // dd($x);
 
