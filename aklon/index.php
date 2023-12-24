@@ -1,65 +1,150 @@
 <?php
 
-if (false) {
-    $url = str_ireplace('.akrezing.ir', '', $_SERVER['SCRIPT_URI']);
-} else {
-    $url = 'https://www.mashreghnews.ir/news/1547891/%D8%AC%D8%B4%D9%86%DB%8C-%DA%A9%D9%87-%DA%AF%D9%86%D8%AF%D8%B4-%D8%AF%D8%B1%D8%A2%D9%85%D8%AF';
-    // $url = 'https://melomusic.ir/wp-content/uploads/2022/09/aroosi.jpgg?asfasfasf=afsasf #dssd';
-}
-
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\ServerRequest;
 use GuzzleHttp\Psr7\Uri;
 
 require('../vendor/autoload.php');
 
-function unparse_url(array $parsed): string
+class Xxx
 {
-    $pass      = $parsed['pass'] ?? null;
-    $user      = $parsed['user'] ?? null;
-    $userinfo  = $pass !== null ? "$user:$pass" : $user;
-    $port      = $parsed['port'] ?? 0;
-    $scheme    = $parsed['scheme'] ?? "";
-    $query     = $parsed['query'] ?? "";
-    $fragment  = $parsed['fragment'] ?? "";
-    $authority = (
-        ($userinfo !== null ? "$userinfo@" : "") .
-        ($parsed['host'] ?? "") .
-        ($port ? ":$port" : "")
-    );
-    return (
-        (\strlen($scheme) > 0 ? "$scheme:" : "") .
-        (\strlen($authority) > 0 ? "//$authority" : "") .
-        ($parsed['path'] ?? "") .
-        (\strlen($query) > 0 ? "?$query" : "") .
-        (\strlen($fragment) > 0 ? "#$fragment" : "")
-    );
-}
+    public $realUrl;
+    public $realHost;
+    public $realScheme;
 
-function srcHref($matches)
-{
-    $url = trim($matches[2]);
+    public function __construct(
+        public string $fakeUrl,
+        public string $fakeHost,
+        public string $fakeScheme = 'https'
+    ) {
+        $this->realUrl = $this->fakeToReal($fakeUrl);
 
-    $schemes = array('data:', 'magnet:', 'about:', 'javascript:', 'mailto:', 'tel:', 'ios-app:', 'android-app:');
-    if (starts_with($url, $schemes)) {
-        return $matches[0];
+        $parsed = $this->parseUrl($this->realUrl);
+        $this->realHost = $parsed['host'];
+        $this->realScheme = $parsed['scheme'];
     }
 
-    if (
-        isset($matches[2])
-        and $parsed = parse_url($matches[2])
-        and isset($parsed['host'])
-    ) {
-        $parsed['scheme'] = 'http';
-        $parsed['host'] = $parsed['host'] . '.akrezing.ir';
-        $changed = unparse_url($parsed);
+    public static function parseUrl(string $url, int $component = -1)
+    {
+        return parse_url($url, $component);
+    }
+
+    public static function unparseUrl(array $parsed, $host = null, $scheme = null): string
+    {
+        $parsed = $parsed + [
+            'scheme' => null,
+            'user' => null,
+            'pass' => null,
+            'host' => null,
+            'port' => null,
+            'path' => null,
+            'query' => null,
+            'fragment' => null,
+        ];
+        if (null !== $scheme) {
+            $parsed['scheme'] = $scheme;
+        }
+        if (null !== $host) {
+            $parsed['host'] = $host;
+        }
+
+        $scheme = '';
+        if ($parsed['scheme']) {
+            $scheme = $parsed['scheme'] . '://';
+        }
+        $userPass = '';
+        if ($parsed['user']) {
+            if ($parsed['pass']) {
+                $userPass = $parsed['user'] . ':' . $parsed['pass'] . '@';
+            } else {
+                $userPass = $parsed['user'] . '@';
+            }
+        }
+        $port = '';
+        if ($parsed['port']) {
+            $port = ':' . $parsed['port'];
+        }
+        $path = '';
+        if ($parsed['path']) {
+            $path = $parsed['path'];
+        }
+        $query = '';
+        if ($parsed['query']) {
+            $query = '?' . $parsed['query'];
+        }
+        $fragment = '';
+        if ($parsed['fragment']) {
+            $fragment = '#' . $parsed['fragment'];
+        }
+
+        return ($parsed['host'] ? $scheme . $userPass . $parsed['host'] . $port : '')  . $path . $query . $fragment;
+    }
+
+    public static function realToFake($realUrl, $fakeScheme, $fakeHost, $realScheme, $realHost)
+    {
+        $parsed = static::parseUrl($realUrl);
+
+        $scheme = (isset($parsed['scheme']) ? $parsed['scheme'] : $realScheme);
+        $host = (isset($parsed['host']) ? $parsed['host'] : $realHost);
+
+        return static::unparseUrl(
+            $parsed,
+            implode('.', [$scheme, $host, $fakeHost]),
+            $fakeScheme
+        );
+    }
+
+    public function fakeToReal($fakeUrl)
+    {
+        $parsed = static::parseUrl($fakeUrl);
+
+        $realSchemeHost = str_replace('.' . $this->fakeHost, '', $parsed['host']);
+
+        [
+            0 => $realScheme,
+            1 => $realHost,
+        ] = explode('.', $realSchemeHost, 2);
+
+        return static::unparseUrl(
+            $parsed,
+            $realHost,
+            $realScheme
+        );
+    }
+
+    public function convertBody($body)
+    {
+        $body = preg_replace_callback('@(?:src|href)\s*=\s*(["|\'])(.*?)\1@is', [$this, 'srcHref'], $body);
+
+        return $body;
+    }
+
+    public function srcHref($matches)
+    {
+        $url = trim($matches[2]);
+
+        $schemes = array('data:', 'magnet:', 'about:', 'javascript:', 'mailto:', 'tel:', 'ios-app:', 'android-app:');
+        if (starts_with($url, $schemes)) {
+            return $matches[0];
+        }
+
+        $changed = $this->realToFake(
+            $matches[2],
+            $this->fakeScheme,
+            $this->fakeHost,
+            $this->realScheme,
+            $this->realHost
+        );
+
         return str_replace($url, $changed, $matches[0]);
     }
-
-    return $matches[0];
 }
 
-$request = ServerRequest::fromGlobals()->withUri(new Uri($url));
+$x = new Xxx($_SERVER['SCRIPT_URI'], 'akrezing.ir', 'http');
+
+// dd($x);
+
+$request = ServerRequest::fromGlobals()->withUri(new Uri($x->realUrl));
 
 $client = new Client([
     'curl' => [
@@ -94,7 +179,5 @@ if (!$isHtml) {
     }
 } else {
     $body = $response->getBody()->getContents();
-    $body = preg_replace_callback('@(?:src|href)\s*=\s*(["|\'])(.*?)\1@is', 'srcHref', $body);
-    echo ($body);
-    flush();
+    echo $x->convertBody($body);
 }
