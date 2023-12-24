@@ -24,7 +24,7 @@ class Xxx
         $this->fakeUrl = $fakeUrl;
         $this->fakeUrlParsed = static::parseUrl($fakeUrl);
         //
-        $this->realUrl = static::fakeToReal($fakeUrl, $baseHost);
+        $this->realUrl = static::fakeToReal($fakeUrl, $baseHost, $this->fakeUrlParsed);
         $this->realUrlParsed = static::parseUrl($this->realUrl);
     }
 
@@ -92,7 +92,7 @@ class Xxx
         return static::unparseUrl($parsed);
     }
 
-    public static function fakeToReal($url, $baseHost)
+    public static function fakeToReal($url, $baseHost, $fakeUrlParsed)
     {
         $parsed = static::parseUrl($url);
 
