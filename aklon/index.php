@@ -24,7 +24,7 @@ class Xxx
         $this->fakeUrl = $fakeUrl;
         $this->fakeUrlParsed = static::parseUrl($fakeUrl);
         //
-        $this->realUrl = static::fakeToReal($fakeUrl, $baseHost, $this->fakeUrlParsed);
+        $this->realUrl = static::decryptUrl($fakeUrl, $baseHost, $this->fakeUrlParsed);
         $this->realUrlParsed = static::parseUrl($this->realUrl);
     }
 
@@ -36,6 +36,21 @@ class Xxx
     public static function parseUrl(string $url, int $component = -1)
     {
         return parse_url($url, $component);
+    }
+
+    public static function strRotPass($str, $key, $isDecrypt = false)
+    {
+        $keyLength = strlen($key);
+        $result = str_repeat(' ', strlen($str));
+        for ($i = 0; $i < strlen($str); $i++) {
+            if ($isDecrypt) {
+                $ascii = ord($str[$i]) - ord($key[$i % $keyLength]);
+            } else {
+                $ascii = ord($str[$i]) + ord($key[$i % $keyLength]);
+            }
+            $result[$i] = chr($ascii);
+        }
+        return $result;
     }
 
     public static function unparseUrl(array $parsed): string
@@ -79,7 +94,7 @@ class Xxx
         return ($parsed['host'] ? $scheme . $userPass . $parsed['host'] . $port : '')  . $path . $query . $fragment;
     }
 
-    public static function realToFake($url, $baseHost, $fakeUrlParsed, $realUrlParsed)
+    public static function encryptUrl($url, $baseHost, $fakeUrlParsed, $realUrlParsed)
     {
         $parsed = static::parseUrl($url);
 
@@ -92,7 +107,7 @@ class Xxx
         return static::unparseUrl($parsed);
     }
 
-    public static function fakeToReal($url, $baseHost, $fakeUrlParsed)
+    public static function decryptUrl($url, $baseHost, $fakeUrlParsed)
     {
         $parsed = static::parseUrl($url);
 
@@ -128,7 +143,7 @@ class Xxx
             $pos = strpos($part, ' ');
             if ($pos !== false) {
                 $url = substr($part, 0, $pos);
-                $changed = static::realToFake(
+                $changed = static::encryptUrl(
                     $url,
                     $this->baseHost,
                     $this->fakeUrlParsed,
@@ -143,7 +158,7 @@ class Xxx
     private function cssImport($matches)
     {
         $url = trim($matches[2]);
-        $changed = static::realToFake(
+        $changed = static::encryptUrl(
             $url,
             $this->baseHost,
             $this->fakeUrlParsed,
@@ -158,7 +173,7 @@ class Xxx
         if (starts_with($url, 'data:')) {
             return $matches[0];
         }
-        $changed = static::realToFake(
+        $changed = static::encryptUrl(
             $url,
             $this->baseHost,
             $this->fakeUrlParsed,
@@ -170,7 +185,7 @@ class Xxx
     private function metaRefresh($matches)
     {
         $url = trim($matches[2]);
-        $changed = static::realToFake(
+        $changed = static::encryptUrl(
             $url,
             $this->baseHost,
             $this->fakeUrlParsed,
@@ -185,7 +200,7 @@ class Xxx
         if (!$action) {
             $action = $this->fakeUrl;
         }
-        $changed = static::realToFake(
+        $changed = static::encryptUrl(
             $action,
             $this->baseHost,
             $this->fakeUrlParsed,
@@ -201,7 +216,7 @@ class Xxx
         if (starts_with($url, $schemes)) {
             return $matches[0];
         }
-        $changed = static::realToFake(
+        $changed = static::encryptUrl(
             $url,
             $this->baseHost,
             $this->fakeUrlParsed,
