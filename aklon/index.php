@@ -74,15 +74,15 @@ class Xxx
         return ($parsed['host'] ? $scheme . $userPass . $parsed['host'] . $port : '')  . $path . $query . $fragment;
     }
 
-    public static function realToFake($realUrl, $fakeScheme, $fakeHost, $realScheme, $realHost)
+    public static function realToFake($url, $baseHost, $fakeUrlParsed, $realUrlParsed)
     {
-        $parsed = static::parseUrl($realUrl);
+        $parsed = static::parseUrl($url);
 
-        $scheme = (isset($parsed['scheme']) ? $parsed['scheme'] : $realScheme);
-        $host = (isset($parsed['host']) ? $parsed['host'] : $realHost);
+        $scheme = (isset($parsed['scheme']) ? $parsed['scheme'] : $realUrlParsed['scheme']);
+        $host = (isset($parsed['host']) ? $parsed['host'] : $realUrlParsed['host']);
 
-        $parsed['scheme'] = $fakeScheme;
-        $parsed['host'] = implode('.', [$scheme, $host, $fakeHost]);
+        $parsed['scheme'] = $fakeUrlParsed['scheme'];
+        $parsed['host'] = implode('.', [$scheme, $host, $baseHost]);
 
         return static::unparseUrl($parsed);
     }
@@ -122,10 +122,10 @@ class Xxx
 
         $changed = static::realToFake(
             $matches[2],
-            $this->fakeUrlParsed['scheme'],
             $this->baseHost,
-            $this->realUrlParsed['scheme'],
-            $this->realUrlParsed['host']
+            $this->fakeUrlParsed,
+            $this->realUrlParsed
+
         );
 
         return str_replace($url, $changed, $matches[0]);
