@@ -34,19 +34,19 @@ try {
     $response = $e->getResponse();
 }
 
-$cleanContentType = Aklon::getCleanContentType(implode(',', $response->getHeader('content-type')));
-$isHtml = ('text/html' == $cleanContentType);
-
 foreach ($response->getHeaders() as $headerKey => $headers) {
     header($headerKey . ':' . implode(',', $headers));
 }
-if (!$isHtml) {
-    $bodyReader = $response->getBody();
-    while (!$bodyReader->eof()) {
-        echo $bodyReader->read(512);
+
+$body = $response->getBody();
+
+$cleanContentType = Aklon::getCleanContentType(implode(',', $response->getHeader('content-type')));
+
+if ('text/html' == $cleanContentType) {
+    echo Aklon::convertBody($body, $baseHost, $fakeUrl, $realUrl);
+} else {
+    while (!$body->eof()) {
+        echo $body->read(512);
         flush();
     }
-} else {
-    $body = $response->getBody()->getContents();
-    echo Aklon::convertBody($body, $baseHost, $fakeUrl, $realUrl);
 }
