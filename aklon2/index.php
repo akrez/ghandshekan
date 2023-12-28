@@ -43,7 +43,9 @@ $body = $response->getBody();
 $cleanContentType = Aklon::getCleanContentType(implode(',', $response->getHeader('content-type')));
 
 if ('text/html' == $cleanContentType) {
-    echo Aklon::convertBody($body, $baseHost, $fakeUrl, $realUrl);
+    echo Aklon::convertHtml($body, $baseHost, $fakeUrl, $realUrl);
+} elseif ('text/css' == $cleanContentType) {
+    echo Aklon::convertCss($body, $baseHost, $fakeUrl, $realUrl);
 } else {
     while (!$body->eof()) {
         echo $body->read(512);

@@ -149,7 +149,12 @@ class Aklon
         return $url;
     }
 
-    public static function convertBody($body, $baseHost, $fakeUrl, $realUrl)
+    public static function convertCss($body, $baseHost, $fakeUrl, $realUrl)
+    {
+        return $body;
+    }
+
+    public static function convertHtml($body, $baseHost, $fakeUrl, $realUrl)
     {
         $body = preg_replace_callback('@(?:src|href)\s*=\s*(["|\'])(.*?)\1@is', function ($matches) use ($baseHost, $fakeUrl, $realUrl) {
             $url = trim($matches[2]);
