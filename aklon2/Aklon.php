@@ -116,16 +116,10 @@ class Aklon
 
     public static function encryptUrl($current, $baseHost, $fakeUrl = '', $realUrl = '')
     {
-        $parsedCurrent = static::parseUrl($current);
         if ($realUrl) {
-            $parsedRealUrl = static::parseUrl($realUrl);
-            if (isset($parsedRealUrl['host']) and empty($parsedCurrent['host'])) {
-                $parsedCurrent['host'] = $parsedRealUrl['host'];
-            }
-            if (isset($parsedRealUrl['scheme']) and empty($parsedCurrent['scheme'])) {
-                $parsedCurrent['scheme'] = $parsedRealUrl['scheme'];
-            }
+            $current = static::convertRelativeToAbsoluteUrl($realUrl, $current);
         }
+        $parsedCurrent = static::parseUrl($current);
         return static::unparseUrl([
             'scheme' => 'http',
             'host' => $baseHost,
@@ -151,6 +145,18 @@ class Aklon
 
     public static function convertCss($body, $baseHost, $fakeUrl, $realUrl)
     {
+        $body = preg_replace_callback('/@import (\'|")(.*?)\1/i', function ($matches) use ($baseHost, $fakeUrl, $realUrl) {
+            $url = trim($matches[2]);
+            $changed = static::encryptUrl($url, $baseHost, $fakeUrl, $realUrl);
+            return str_replace($url, $changed, $matches[0]);
+        }, $body);
+
+        $body = preg_replace_callback('/\burl\(\s*+\K(?|(")((?>[^"\\\\]++|\\\\.)*+)"|(\')((?>[^\'\\\\]++|\\\\.)*+)\'|()([\S)]*+))(\s*+\))/ix', function ($matches) use ($baseHost, $fakeUrl, $realUrl) {
+            $url = trim($matches[2]);
+            $changed = static::encryptUrl($url, $baseHost, $fakeUrl, $realUrl);
+            return str_replace($url, $changed, $matches[0]);
+        }, $body);
+
         return $body;
     }
 
@@ -190,11 +196,6 @@ class Aklon
             return str_replace($url, $changed, $matches[0]);
         }, $body);
 
-        $body = preg_replace_callback('/@import (\'|")(.*?)\1/i', function ($matches) use ($baseHost, $fakeUrl, $realUrl) {
-            $url = trim($matches[2]);
-            $changed = static::encryptUrl($url, $baseHost, $fakeUrl, $realUrl);
-            return str_replace($url, $changed, $matches[0]);
-        }, $body);
 
         $body = preg_replace_callback('/srcset=\"(.*?)\"/i', function ($matches) use ($baseHost, $fakeUrl, $realUrl) {
             $src = trim($matches[1]);
