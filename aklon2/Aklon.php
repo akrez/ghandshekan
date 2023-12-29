@@ -2,9 +2,6 @@
 
 class Aklon
 {
-    const KEY = '123234235235';
-    const CIPHER = 'AES-128-CBC';
-
     public static function getCleanContentType($contentType)
     {
         return trim(preg_replace('@;.*@', '', $contentType));
@@ -13,48 +10,16 @@ class Aklon
     public static function encrypt($plaintext)
     {
         return base64_encode($plaintext);
-        $key = static::KEY;
-        $ivlen = openssl_cipher_iv_length(static::CIPHER);
-        $iv = openssl_random_pseudo_bytes($ivlen);
-        $raw = openssl_encrypt($plaintext, static::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
-        $hmac = hash_hmac('sha256', $raw, $key, true);
-        return base64_encode($iv . $hmac . $raw);
     }
 
     public static function decrypt($data)
     {
         return base64_decode($data);
-        $key = static::KEY;
-        $c = base64_decode($data);
-        $ivlen = openssl_cipher_iv_length(static::CIPHER);
-        $iv = substr($c, 0, $ivlen);
-        $hmac = substr($c, $ivlen, $sha2len = 32);
-        $raw = substr($c, $ivlen + $sha2len);
-        $plaintext = openssl_decrypt($raw, static::CIPHER, $key, OPENSSL_RAW_DATA, $iv);
-        $calcmac = hash_hmac('sha256', $raw, $key, true);
-        if (hash_equals($hmac, $calcmac)) {
-            return $plaintext;
-        }
     }
 
     public static function isBase64Encode($data)
     {
         return !!(base64_encode(base64_decode($data, true)) === $data);
-    }
-
-    public static function strRotPass($str, $key, $isDecrypt = false)
-    {
-        $keyLength = strlen($key);
-        $result = str_repeat(' ', strlen($str));
-        for ($i = 0; $i < strlen($str); $i++) {
-            if ($isDecrypt) {
-                $ascii = ord($str[$i]) - ord($key[$i % $keyLength]);
-            } else {
-                $ascii = ord($str[$i]) + ord($key[$i % $keyLength]);
-            }
-            $result[$i] = chr($ascii);
-        }
-        return $result;
     }
 
     public static function startsWith($haystack, $needles)
