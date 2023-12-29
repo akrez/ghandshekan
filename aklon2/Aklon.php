@@ -114,6 +114,99 @@ class Aklon
         return ($parsed['host'] ? $scheme . $userPass . $parsed['host'] . $port : '')  . $path . $query . $fragment;
     }
 
+    public static function convertRelativeToAbsoluteUrl($absolute, $path)
+    {
+        $absoluteParsed = static::parseUrl($absolute);
+        $relativeParsed = static::parseUrl($path);
+        $absolutePath = '';
+
+        if (isset($relativeParsed['path']) && isset($absoluteParsed['scheme']) && substr($relativeParsed['path'], 0, 2) === '//' && !isset($relativeParsed['scheme'])) {
+            $path = $absoluteParsed['scheme'] . ':' . $path;
+            $relativeParsed = static::parseUrl($path);
+        }
+
+        if (isset($relativeParsed['host'])) {
+            return $path;
+        }
+
+        if (isset($absoluteParsed['scheme'])) {
+            $absolutePath .= $absoluteParsed['scheme'] . '://';
+        }
+
+        if (isset($absoluteParsed['user'])) {
+            if (isset($absoluteParsed['pass'])) {
+                $absolutePath .= $absoluteParsed['user'] . ':' . $absoluteParsed['pass'] . '@';
+            } else {
+                $absolutePath .= $absoluteParsed['user'] . '@';
+            }
+        }
+
+        if (isset($absoluteParsed['host'])) {
+            $absolutePath .= $absoluteParsed['host'];
+        }
+
+        if (isset($absoluteParsed['port'])) {
+            $absolutePath .= ':' . $absoluteParsed['port'];
+        }
+
+        if (isset($relativeParsed['path'])) {
+            $pathSegments = explode('/', $relativeParsed['path']);
+
+            if (isset($absoluteParsed['path'])) {
+                $absoluteSegments = explode('/', $absoluteParsed['path']);
+            } else {
+                $absoluteSegments = array('', '');
+            }
+
+            $i = -1;
+            while (++$i < count($pathSegments)) {
+                $pathSegment  = $pathSegments[$i];
+                $lastItem = end($absoluteSegments);
+
+                switch ($pathSegment) {
+                    case '.':
+                        if ($i === 0 || empty($lastItem)) {
+                            array_splice($absoluteSegments, -1);
+                        }
+                        break;
+                    case '..':
+                        if ($i === 0 && !empty($lastItem)) {
+                            array_splice($absoluteSegments, -2);
+                        } else {
+                            array_splice($absoluteSegments, empty($lastItem) ? -2 : -1);
+                        }
+                        break;
+                    case '':
+                        if ($i === 0) {
+                            $absoluteSegments = array();
+                        } else {
+                            $absoluteSegments[] = $pathSegment;
+                        }
+                        break;
+                    default:
+                        if ($i === 0 && !empty($lastItem)) {
+                            array_splice($absoluteSegments, -1);
+                        }
+
+                        $absoluteSegments[] = $pathSegment;
+                        break;
+                }
+            }
+
+            $absolutePath .= '/' . ltrim(implode('/', $absoluteSegments), '/');
+        }
+
+        if (isset($relativeParsed['query'])) {
+            $absolutePath .= '?' . $relativeParsed['query'];
+        }
+
+        if (isset($relativeParsed['fragment'])) {
+            $absolutePath .= '#' . $relativeParsed['fragment'];
+        }
+
+        return $absolutePath;
+    }
+
     public static function encryptUrl($current, $baseHost, $fakeUrl = '', $realUrl = '')
     {
         if ($realUrl) {
